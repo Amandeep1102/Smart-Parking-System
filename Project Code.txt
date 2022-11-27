@@ -1,0 +1,100 @@
+#include <ESP8266WiFi.h>
+ 
+String apiKey = "API key from ThingSpeak";     
+ 
+const char *ssid =  "name of wifi"; 
+const char *pass =  "password of wifi";  
+const char* server = "api.thingspeak.com";
+ 
+int ir_sensor =  D1; 
+int ir_sensor2 =  D5; 
+int ir_sensor3 =  D6; 
+int ir_sensor4 =  D7; 
+WiFiClient c1; //For TCP connections
+ 
+void setup() 
+{
+       Serial.begin(115200);
+       
+       delay(10);
+       pinMode(ir_sensor,INPUT);
+       pinMode(ir_sensor2,INPUT);
+       pinMode(ir_sensor3,INPUT);
+       pinMode(ir_sensor4,INPUT);
+ 
+       Serial.println("Connecting to ");
+       Serial.println(ssid);
+ 
+       WiFi.begin(ssid, pass);
+ 
+      while (WiFi.status() != WL_CONNECTED) 
+     {
+            delay(50);
+            Serial.print(".");
+     }
+      Serial.println("");
+      Serial.println("WiFi connected");
+      Serial.println("IP address: ");
+      Serial.println(WiFi.localIP());
+ 
+}
+ 
+void loop() 
+{
+  
+int ir = digitalRead(ir_sensor);
+int ir2 = digitalRead(ir_sensor2);
+int ir3 = digitalRead(ir_sensor3);
+int ir4 = digitalRead(ir_sensor4);
+
+  if (!c1.connect(server, 80))
+  {
+    Serial.println("connection failed");
+    delay(500);
+    return;
+  }
+  Serial.println("sending data to server");
+   if (c1.connect(server,80))   
+    {  
+       String postStr = apiKey;
+       postStr +="&field1=";
+       postStr += String(ir);
+
+       postStr +="&field2=";
+       postStr += String(ir2);
+
+       postStr +="&field3=";
+       postStr += String(ir3);
+
+       postStr +="&field4=";
+       postStr += String(ir4);
+
+       c1.print("POST /update HTTP/1.1\n");
+       c1.print("Host: api.thingspeak.com\n");
+       c1.print("Connection: close\n");
+       c1.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
+       c1.print("Content-Type: application/x-www-form-urlencoded\n");
+       c1.print("Content-Length: ");
+       c1.print(postStr.length());
+       c1.print(postStr);
+
+       Serial.println("SLOT INFORMATION : ");
+       Serial.print("SLOT 1 motion : ");
+       Serial.print(ir); 
+       Serial.println(" , Send to Thingspeak.");
+       Serial.print("SLOT 2 motion : ");
+       Serial.print(ir2);
+       Serial.println(" , Send to Thingspeak.");
+       Serial.print("SLOT 3 motion3 : ");
+       Serial.print(ir3);
+       Serial.println(" , Send to Thingspeak.");
+       Serial.print("SLOT 4 motion : ");
+       Serial.print(ir4);
+       Serial.println(" , Send to Thingspeak.");
+       Serial.println("");
+    }
+   c1.stop();
+  
+  // thingspeak needs minimum 15 sec delay between updates
+  delay(5000);
+}
